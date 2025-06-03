@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>
+            Bathroom
+        </title>
+        <style>
+
+        </style>
+    </head>
+    <body>
+        <h1>Bathroom Website!</h1>
+
+        <!-- For students to get in line -->
+        <div id="next">
+        <input id="input" type="form" placeholder="Need to go">
+        <button id="submit">Submit</button>
+        </div>
+
+        <!-- For students to check back in -->
+        <div>
+        <input id="returned" type="form" placeholder="Returned">
+        <button id="submit_return">Submit</button>
+        </div>
+
+        <!-- Show the full line -->
+        <div>
+            This is the line:
+                <ol id="line_display">
+                    <li></li>
+                </ol>
+        </div>
+    </body>
+    <script>
+        let submit = document.getElementById("submit");
+        let submit_return = document.getElementById("submit_return");
+        let line = [];
+        submit.addEventListener("click", function(){
+            let response = document.getElementById("input").value.toLowerCase();
+
+            // !!This part is not working!!
+            if (line.length >= 3){
+                alert("There are already at least 3 people in line. Please wait.")
+            }
+            else if (!response || line.includes(response)){
+                // do nothing
+            } else {
+            line.push(response);
+            updateDisplay();
+            console.log(line);
+            }
+        });
+
+        submit_return.addEventListener("click", function(){
+            let name = document.getElementById("returned").value.toLowerCase();
+            removeName(name);
+            updateDisplay();
+            });
+
+
+        function updateDisplay() {
+            const display = document.getElementById("line_display");
+            display.innerHTML = ""; // clear existing items
+
+            for (let name of line) {
+                const li = document.createElement("li");
+                li.innerText = name;
+                display.appendChild(li);
+            }
+        }
+
+        function removeName(name) {
+            index = line.indexOf(name);
+            line.splice(index, 1);
+        }
+    </script>
+</html>
