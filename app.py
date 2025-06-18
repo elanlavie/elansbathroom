@@ -6,6 +6,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
+from zoneinfo import ZoneInfo
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -36,9 +37,9 @@ def local_time_filter(utc_time):
     """Convert UTC time to local time for display"""
     if utc_time is None:
         return ''
-    # Converting to your local timezone (7 hours behind UTC)
-    local_offset = timedelta(hours=-7)
-    local_time = utc_time + local_offset
+    
+    # Safely convert UTC-aware time to US Pacific Time
+    local_time = utc_time.astimezone(ZoneInfo("America/Los_Angeles"))
     return local_time.strftime('%I:%M %p')
 
 with app.app_context():
