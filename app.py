@@ -54,7 +54,7 @@ def index():
     # Get current queue entries ordered by join time
     queue_entries = QueueEntry.query.order_by(QueueEntry.joined_at).all()
     queue_count = len(queue_entries)
-    is_full = queue_count >= 3
+    is_full = queue_count >= 5
     
     return render_template('index.html', 
                          queue_entries=queue_entries, 
@@ -79,7 +79,7 @@ def join_queue():
     
     # Check if queue is full
     current_count = QueueEntry.query.count()
-    if current_count >= 3:
+    if current_count >= 5:
         flash('The bathroom queue is full. Please wait for someone to return.', 'error')
         return redirect(url_for('index'))
     
