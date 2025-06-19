@@ -51,22 +51,39 @@
                 </h6>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('checkout') }}">
-                    <div class="mb-3">
-                        <label for="checkout_name" class="form-label">Your Name</label>
-                        <input type="text" 
-                               class="form-control" 
-                               id="checkout_name" 
-                               name="checkout_name" 
-                               placeholder="Enter your name to check out"
-                               maxlength="50"
-                               required>
+                {% if user_token %}
+                    <!-- Show user's own entry if they have one -->
+                    {% set user_entry = None %}
+                    {% for entry in queue_entries %}
+                        {% if entry.owner_token == user_token %}
+                            {% set user_entry = entry %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if user_entry %}
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-person-check me-2"></i>
+                            You are currently in the queue as <strong>{{ user_entry.student_name }}</strong>
+                        </div>
+                        <form method="POST" action="{{ url_for('checkout') }}">
+                            <input type="hidden" name="checkout_name" value="{{ user_entry.student_name }}">
+                            <button type="submit" class="btn btn-outline-success w-100">
+                                <i class="bi bi-check-lg me-2"></i>
+                                Check Out ({{ user_entry.student_name }})
+                            </button>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-secondary">
+                            <i class="bi bi-info-circle me-2"></i>
+                            You are not currently in the queue.
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        You need to join the queue first to check out.
                     </div>
-                    <button type="submit" class="btn btn-outline-success w-100">
-                        <i class="bi bi-check-lg me-2"></i>
-                        Check Out
-                    </button>
-                </form>
+                {% endif %}
             </div>
         </div>
 
@@ -108,10 +125,13 @@
                 {% if queue_entries %}
                     <div class="list-group list-group-flush">
                         {% for entry in queue_entries %}
-                            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {% if entry.owner_token == user_token %}border-primary{% endif %}">
                                 <div>
                                     <span class="queue-position text-primary me-3">{{ loop.index }}</span>
                                     <strong>{{ entry.student_name }}</strong>
+                                    {% if entry.owner_token == user_token %}
+                                        <span class="badge bg-primary ms-2">You</span>
+                                    {% endif %}
                                     <small class="text-muted ms-2">
                                         Joined at {{ entry.joined_at|local_time }}
                                     </small>
@@ -151,7 +171,7 @@
                         <ul class="list-unstyled">
                             <li><i class="bi bi-1-circle text-primary me-2"></i>Enter your name to join the bathroom queue</li>
                             <li><i class="bi bi-2-circle text-primary me-2"></i>Wait for your turn (maximum 5 students allowed)</li>
-                            <li><i class="bi bi-3-circle text-primary me-2"></i>Check yourself out when you return</li>
+                            <li><i class="bi bi-3-circle text-primary me-2"></i>Check yourself out when you return (only you can check out your own name)</li>
                         </ul>
                     </div>
                     <div class="col-md-6">
@@ -159,6 +179,7 @@
                         <ul class="list-unstyled">
                             <li><i class="bi bi-exclamation-circle text-warning me-2"></i>Only 5 students can be in the queue at once</li>
                             <li><i class="bi bi-person-check text-success me-2"></i>Remember to check out when you return!</li>
+                            <li><i class="bi bi-shield-check text-info me-2"></i>Only you can check out your own name for security</li>
                         </ul>
                     </div>
                 </div>

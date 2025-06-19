@@ -2,11 +2,16 @@ import os
 import logging
 from datetime import datetime, timezone, timedelta
 
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, make_response
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
-from zoneinfo import ZoneInfo
+
+# Handle zoneinfo import for different Python versions
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -57,10 +62,14 @@ def index():
     queue_count = len(queue_entries)
     is_full = queue_count >= 5
     
+    # Get the user's ownership token from cookie
+    user_token = request.cookies.get('bathroom_token', '')
+    
     return render_template('index.html', 
                          queue_entries=queue_entries, 
                          queue_count=queue_count,
-                         is_full=is_full)
+                         is_full=is_full,
+                         user_token=user_token)
 
 @app.route('/join', methods=['POST'])
 def join_queue():
@@ -90,13 +99,20 @@ def join_queue():
         flash(f'{student_name} is already in the queue.', 'error')
         return redirect(url_for('index'))
     
+    # Generate a unique token for this entry
+    owner_token = QueueEntry.generate_token()
+    
     # Add student to queue
-    new_entry = QueueEntry(student_name=student_name)
+    new_entry = QueueEntry(student_name=student_name, owner_token=owner_token)
     db.session.add(new_entry)
     db.session.commit()
     
+    # Create response with cookie
+    response = make_response(redirect(url_for('index')))
+    response.set_cookie('bathroom_token', owner_token, max_age=86400)  # 24 hours
+    
     flash(f'{student_name} has been added to the bathroom queue.', 'success')
-    return redirect(url_for('index'))
+    return response
 
 @app.route('/checkout', methods=['POST'])
 def checkout():
@@ -104,15 +120,21 @@ def checkout():
     from models import QueueEntry
     
     student_name = request.form.get('checkout_name', '').strip()
+    user_token = request.cookies.get('bathroom_token', '')
     
     if not student_name:
         flash('Please enter your name to check out.', 'error')
         return redirect(url_for('index'))
     
-    # Find and remove the student from queue
+    # Find the student in queue
     entry = QueueEntry.query.filter_by(student_name=student_name).first()
     if not entry:
         flash(f'{student_name} is not currently in the queue.', 'error')
+        return redirect(url_for('index'))
+    
+    # Check if user owns this entry
+    if entry.owner_token != user_token:
+        flash(f'You can only check out your own name. Please enter the name you used when joining the queue.', 'error')
         return redirect(url_for('index'))
     
     db.session.delete(entry)
