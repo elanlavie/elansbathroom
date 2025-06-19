@@ -30,14 +30,20 @@
                                placeholder="Enter your name"
                                maxlength="50"
                                required 
-                               {% if is_full %}disabled{% endif %}>
+                               {% if is_full or user_entry %}disabled{% endif %}>
                     </div>
                     <button type="submit" 
                             class="btn btn-primary w-100" 
-                            {% if is_full %}disabled{% endif %}>
+                            {% if is_full or user_entry %}disabled{% endif %}>
                         <i class="bi bi-plus-lg me-2"></i>
                         Join Queue
                     </button>
+                    {% if user_entry %}
+                        <div class="alert alert-info mt-3 small">
+                            <i class="bi bi-info-circle me-2"></i>
+                            You are already in the queue as <strong>{{ user_entry.student_name }}</strong>. Please check out before joining again.
+                        </div>
+                    {% endif %}
                 </form>
             </div>
         </div>
@@ -51,38 +57,42 @@
                 </h6>
             </div>
             <div class="card-body">
-                {% if user_token %}
-                    <!-- Show user's own entry if they have one -->
-                    {% set user_entry = None %}
-                    {% for entry in queue_entries %}
-                        {% if entry.owner_token == user_token %}
-                            {% set user_entry = entry %}
-                        {% endif %}
-                    {% endfor %}
-                    
-                    {% if user_entry %}
-                        <div class="alert alert-info mb-3">
-                            <i class="bi bi-person-check me-2"></i>
-                            You are currently in the queue as <strong>{{ user_entry.student_name }}</strong>
+                <!-- If user has an entry, show a one-click checkout button -->
+                {% if user_entry %}
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-person-check me-2"></i>
+                        Welcome back, <strong>{{ user_entry.student_name }}</strong>!
+                    </div>
+                    <form method="POST" action="{{ url_for('checkout') }}" class="m-0">
+                        <input type="hidden" name="checkout_name" value="{{ user_entry.student_name }}">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-check-lg me-2"></i>
+                            Check Out Now
+                        </button>
+                    </form>
+                <!-- Otherwise, show the generic manual checkout form -->
+                {% else %}
+                    <form method="POST" action="{{ url_for('checkout') }}">
+                        <div class="mb-3">
+                            <label for="checkout_name_manual" class="form-label">Your Name</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="checkout_name_manual" 
+                                   name="checkout_name" 
+                                   placeholder="Enter name to check out"
+                                   required>
                         </div>
-                        <form method="POST" action="{{ url_for('checkout') }}">
-                            <input type="hidden" name="checkout_name" value="{{ user_entry.student_name }}">
-                            <button type="submit" class="btn btn-outline-success w-100">
-                                <i class="bi bi-check-lg me-2"></i>
-                                Check Out ({{ user_entry.student_name }})
-                            </button>
-                        </form>
-                    {% else %}
-                        <div class="alert alert-secondary">
-                            <i class="bi bi-info-circle me-2"></i>
-                            You are not currently in the queue.
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-person-dash me-2"></i>
+                            Check Out by Name
+                        </button>
+                    </form>
+                    {% if user_token and not user_entry %}
+                        <div class="alert alert-warning mt-3 small">
+                            <i class="bi bi-exclamation-circle me-2"></i>
+                            Your browser was recognized, but your queue entry was not found. It may have been cleared by the teacher.
                         </div>
                     {% endif %}
-                {% else %}
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        You need to join the queue first to check out.
-                    </div>
                 {% endif %}
             </div>
         </div>
@@ -125,11 +135,11 @@
                 {% if queue_entries %}
                     <div class="list-group list-group-flush">
                         {% for entry in queue_entries %}
-                            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {% if entry.owner_token == user_token %}border-primary{% endif %}">
+                            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {% if user_token and entry.owner_token == user_token %}border-primary{% endif %}">
                                 <div>
                                     <span class="queue-position text-primary me-3">{{ loop.index }}</span>
                                     <strong>{{ entry.student_name }}</strong>
-                                    {% if entry.owner_token == user_token %}
+                                    {% if user_token and entry.owner_token == user_token %}
                                         <span class="badge bg-primary ms-2">You</span>
                                     {% endif %}
                                     <small class="text-muted ms-2">

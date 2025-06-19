@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import secrets
-from app import db
+from extensions import db
 
 class QueueEntry(db.Model):
     """Model for bathroom queue entries"""
