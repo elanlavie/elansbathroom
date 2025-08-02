@@ -1,5 +1,4 @@
-# elansbathroom
+# elansbathroomwebsite
 
-## I will explain how my bathroom website works here.
-
-**This is bold in markdown** This is not bold.
+This is a website for my students to get into line for the bathroom and check back in when they get back, saving everyone the headache of trying to remember "who's next?"
+The website was mostly vibe-coded using Windsurf!
